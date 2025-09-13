@@ -1,20 +1,27 @@
 # AI-Based Coding Rules for Rust and Go Development (AIBD-RG)
 
-*Based on the 7-step Vibe Coding Workflow and industry best practices*
+_Based on the 7-step Vibe Coding Workflow and industry best practices_
 
 ## Overview
 
-This document establishes the **AIBD-RG** (AI Boosted Development - Rust & Go) guidelines for maintainable AI-assisted development. These rules ensure consistent, high-quality code generation while preserving long-term maintainability.
+This document establishes the **AIBD-RG** (AI Boosted Development - Rust & Go)
+guidelines for maintainable AI-assisted development. These rules ensure
+consistent, high-quality code generation while preserving long-term
+maintainability.
 
 ## Core Principles
 
-1. **Feature-Based Architecture**: Organize code by business capabilities, not technical layers
-2. **Small, Focused Files**: One declaration per file for better AI token efficiency
-3. **Clear Boundaries**: Enforce module separation with explicit dependency rules
+1. **Feature-Based Architecture**: Organize code by business capabilities, not
+   technical layers
+2. **Small, Focused Files**: One declaration per file for better AI token
+   efficiency
+3. **Clear Boundaries**: Enforce module separation with explicit dependency
+   rules
 4. **Type Safety First**: Leverage Rust’s ownership system and Go’s interfaces
-5. **Documentation as Code**: Maintain living documentation alongside implementation
+5. **Documentation as Code**: Maintain living documentation alongside
+   implementation
 
------
+---
 
 ## 1. Project Structure
 
@@ -90,34 +97,41 @@ src/
 └── scripts/                # Build and deployment scripts
 ```
 
------
+---
 
 ## 2. Architecture Guidelines
 
 ### Feature Organization Rules
 
 1. **Self-Contained Features**: Each feature owns its complete functionality
-2. **Clear Boundaries**: Features can depend on `shared/` but not on other features directly
-3. **Public API Surface**: Only expose what’s necessary through `mod.rs` (Rust) or package-level exports (Go)
-4. **Internal Implementation**: Keep implementation details in `internal/` directories
+2. **Clear Boundaries**: Features can depend on `shared/` but not on other
+   features directly
+3. **Public API Surface**: Only expose what’s necessary through `mod.rs` (Rust)
+   or package-level exports (Go)
+4. **Internal Implementation**: Keep implementation details in `internal/`
+   directories
 
 ### Dependency Rules
 
 #### Rust
 
-- Features in `src/features/` can import from `src/shared/` and other features’ public APIs
+- Features in `src/features/` can import from `src/shared/` and other features’
+  public APIs
 - Shared modules in `src/shared/` cannot import from `src/features/`
-- Internal modules (`*/internal/`) are only accessible within their parent feature
+- Internal modules (`*/internal/`) are only accessible within their parent
+  feature
 - Use `pub(crate)` for crate-internal APIs, `pub` only for true public APIs
 
 #### Go
 
-- Features in `internal/features/` can import from `internal/shared/` and other features’ public APIs
+- Features in `internal/features/` can import from `internal/shared/` and other
+  features’ public APIs
 - Shared modules in `internal/shared/` cannot import from `internal/features/`
-- Internal packages (`*/internal/`) follow Go’s internal package visibility rules
+- Internal packages (`*/internal/`) follow Go’s internal package visibility
+  rules
 - Use clear package naming and avoid circular dependencies
 
------
+---
 
 ## 3. File Organization
 
@@ -136,7 +150,7 @@ pub struct UserSettings { ... }
 // user.rs
 pub struct User { ... }
 
-// user_profile.rs  
+// user_profile.rs
 pub struct UserProfile { ... }
 
 // user_settings.rs
@@ -159,7 +173,7 @@ type User struct { ... }
 // profile.go
 type UserProfile struct { ... }
 
-// settings.go  
+// settings.go
 type UserSettings struct { ... }
 ```
 
@@ -187,16 +201,16 @@ import (
     "context"
     "fmt"
     "time"
-    
+
     "github.com/gin-gonic/gin"
     "github.com/google/uuid"
-    
+
     "myapp/internal/shared/types"
     "myapp/internal/shared/errors"
 )
 ```
 
------
+---
 
 ## 4. Code Style Guidelines
 
@@ -204,7 +218,7 @@ import (
 
 #### Async/Await Best Practices
 
-```rust
+````rust
 // ❌ Don't: Async constructors
 impl UserService {
     pub async fn new(repo: UserRepository) -> Self {
@@ -237,15 +251,15 @@ env:
 jobs:
   test:
     runs-on: ubuntu-latest
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Install Rust toolchain
       uses: dtolnay/rust-toolchain@stable
       with:
         components: rustfmt, clippy
-    
+
     - name: Cache dependencies
       uses: actions/cache@v3
       with:
@@ -254,34 +268,34 @@ jobs:
           ~/.cargo/git
           target
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-    
+
     - name: Check formatting
       run: cargo fmt --all -- --check
-    
+
     - name: Run clippy
       run: cargo clippy --all-targets --all-features -- -D warnings
-    
+
     - name: Run tests
       run: cargo test --all-features --verbose
-    
+
     - name: Check for circular dependencies
       run: |
         cargo install cargo-deps
         cargo deps --no-transitive-deps | grep -q "cycle" && exit 1 || exit 0
-    
+
     - name: Security audit
       run: |
         cargo install cargo-audit
         cargo audit
-    
+
     - name: Generate documentation
       run: cargo doc --no-deps --all-features
-    
+
     - name: Upload coverage reports
       uses: codecov/codecov-action@v3
       with:
         file: ./target/tarpaulin/cobertura.xml
-```
+````
 
 #### Go CI Pipeline
 
@@ -291,107 +305,107 @@ name: Go CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   test:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: '1.21'
-    
-    - name: Cache dependencies
-      uses: actions/cache@v3
-      with:
-        path: |
-          ~/.cache/go-build
-          ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-    
-    - name: Install dependencies
-      run: go mod download
-    
-    - name: Verify dependencies
-      run: go mod verify
-    
-    - name: Check formatting
-      run: |
-        if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
-          echo "Code not formatted:"
-          gofmt -s -l .
-          exit 1
-        fi
-    
-    - name: Run go vet
-      run: go vet ./...
-    
-    - name: Install golangci-lint
-      run: |
-        curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.54.2
-    
-    - name: Run golangci-lint
-      run: golangci-lint run
-    
-    - name: Run tests with coverage
-      run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
-    
-    - name: Check for circular dependencies
-      run: |
-        go list -json ./... | jq -r '.ImportPath + " " + (.Imports // [] | join(" "))' | \
-          python3 -c "
-        import sys
-        from collections import defaultdict, deque
-        
-        graph = defaultdict(list)
-        for line in sys.stdin:
-            parts = line.strip().split()
-            if len(parts) > 1:
-                pkg = parts[0]
-                for imp in parts[1:]:
-                    if imp.startswith('$(go list -m)'):
-                        graph[pkg].append(imp)
-        
-        def has_cycle(graph):
-            WHITE, GRAY, BLACK = 0, 1, 2
-            color = defaultdict(int)
-            
-            def dfs(node):
-                color[node] = GRAY
-                for neighbor in graph[node]:
-                    if color[neighbor] == GRAY:
-                        return True
-                    if color[neighbor] == WHITE and dfs(neighbor):
-                        return True
-                color[node] = BLACK
-                return False
-            
-            for node in graph:
-                if color[node] == WHITE:
-                    if dfs(node):
-                        return True
-            return False
-        
-        if has_cycle(graph):
-            print('Circular dependency detected')
-            sys.exit(1)
-        "
-    
-    - name: Run gosec security scanner
-      run: |
-        go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest
-        gosec ./...
-    
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
-      with:
-        file: ./coverage.out
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+
+      - name: Install dependencies
+        run: go mod download
+
+      - name: Verify dependencies
+        run: go mod verify
+
+      - name: Check formatting
+        run: |
+          if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
+            echo "Code not formatted:"
+            gofmt -s -l .
+            exit 1
+          fi
+
+      - name: Run go vet
+        run: go vet ./...
+
+      - name: Install golangci-lint
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.54.2
+
+      - name: Run golangci-lint
+        run: golangci-lint run
+
+      - name: Run tests with coverage
+        run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
+
+      - name: Check for circular dependencies
+        run: |
+          go list -json ./... | jq -r '.ImportPath + " " + (.Imports // [] | join(" "))' | \
+            python3 -c "
+          import sys
+          from collections import defaultdict, deque
+
+          graph = defaultdict(list)
+          for line in sys.stdin:
+              parts = line.strip().split()
+              if len(parts) > 1:
+                  pkg = parts[0]
+                  for imp in parts[1:]:
+                      if imp.startswith('$(go list -m)'):
+                          graph[pkg].append(imp)
+
+          def has_cycle(graph):
+              WHITE, GRAY, BLACK = 0, 1, 2
+              color = defaultdict(int)
+              
+              def dfs(node):
+                  color[node] = GRAY
+                  for neighbor in graph[node]:
+                      if color[neighbor] == GRAY:
+                          return True
+                      if color[neighbor] == WHITE and dfs(neighbor):
+                          return True
+                  color[node] = BLACK
+                  return False
+              
+              for node in graph:
+                  if color[node] == WHITE:
+                      if dfs(node):
+                          return True
+              return False
+
+          if has_cycle(graph):
+              print('Circular dependency detected')
+              sys.exit(1)
+          "
+
+      - name: Run gosec security scanner
+        run: |
+          go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest
+          gosec ./...
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.out
 ```
 
 ### Semantic Versioning and Changelog Automation
@@ -455,23 +469,23 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-    
-    - name: Generate changelog
-      run: |
-        curl -L https://github.com/orhun/git-cliff/releases/latest/download/git-cliff-$(uname -s)-$(uname -m).tar.gz | tar xz
-        ./git-cliff --current > CHANGELOG.md
-    
-    - name: Create Release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
-        body_path: CHANGELOG.md
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate changelog
+        run: |
+          curl -L https://github.com/orhun/git-cliff/releases/latest/download/git-cliff-$(uname -s)-$(uname -m).tar.gz | tar xz
+          ./git-cliff --current > CHANGELOG.md
+
+      - name: Create Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          body_path: CHANGELOG.md
 ```
 
 ### Dependency Management and Security
@@ -534,7 +548,7 @@ govulncheck ./...     # Check for known vulnerabilities
 go list -m all | nancy sleuth  # Check dependencies
 ```
 
------
+---
 
 ## 9. Security and Compliance
 
@@ -551,14 +565,14 @@ use validator::{Validate, ValidationError};
 pub struct CreateUserRequest {
     #[validate(length(min = 1, max = 100))]
     pub name: String,
-    
+
     #[validate(email)]
     pub email: String,
-    
+
     #[validate(length(min = 8, max = 128))]
     #[validate(custom = "validate_password_strength")]
     pub password: String,
-    
+
     #[validate(range(min = 18, max = 120))]
     pub age: Option<u8>,
 }
@@ -568,7 +582,7 @@ fn validate_password_strength(password: &str) -> Result<(), ValidationError> {
     let has_lower = password.chars().any(|c| c.is_lowercase());
     let has_digit = password.chars().any(|c| c.is_numeric());
     let has_special = password.chars().any(|c| "!@#$%^&*()".contains(c));
-    
+
     if has_upper && has_lower && has_digit && has_special {
         Ok(())
     } else {
@@ -577,19 +591,19 @@ fn validate_password_strength(password: &str) -> Result<(), ValidationError> {
 }
 
 // Safe deserialization with size limits
-pub fn deserialize_request<T>(body: &[u8]) -> Result<T, ValidationError> 
-where 
+pub fn deserialize_request<T>(body: &[u8]) -> Result<T, ValidationError>
+where
     T: for<'a> Deserialize<'a> + Validate,
 {
     const MAX_SIZE: usize = 1024 * 1024; // 1MB limit
-    
+
     if body.len() > MAX_SIZE {
         return Err(ValidationError::new("request_too_large"));
     }
-    
+
     let data: T = serde_json::from_slice(body)
         .map_err(|_| ValidationError::new("invalid_json"))?;
-    
+
     data.validate()?;
     Ok(data)
 }
@@ -617,19 +631,19 @@ func (r *CreateUserRequest) Validate() error {
     if len(r.Name) == 0 || len(r.Name) > 100 {
         return fmt.Errorf("name must be 1-100 characters")
     }
-    
+
     if _, err := mail.ParseAddress(r.Email); err != nil {
         return fmt.Errorf("invalid email format")
     }
-    
+
     if err := validatePasswordStrength(r.Password); err != nil {
         return err
     }
-    
+
     if r.Age != nil && (*r.Age < 18 || *r.Age > 120) {
         return fmt.Errorf("age must be between 18 and 120")
     }
-    
+
     return nil
 }
 
@@ -637,7 +651,7 @@ func validatePasswordStrength(password string) error {
     if len(password) < 8 {
         return fmt.Errorf("password too short")
     }
-    
+
     var hasUpper, hasLower, hasDigit, hasSpecial bool
     for _, char := range password {
         switch {
@@ -651,22 +665,22 @@ func validatePasswordStrength(password string) error {
             hasSpecial = true
         }
     }
-    
+
     if !hasUpper || !hasLower || !hasDigit || !hasSpecial {
         return fmt.Errorf("password must contain uppercase, lowercase, digit, and special character")
     }
-    
+
     return nil
 }
 
 // Safe JSON parsing with size limits
 func ParseJSONRequest(ctx context.Context, body []byte, dest interface{}) error {
     const maxSize = 1024 * 1024 // 1MB limit
-    
+
     if len(body) > maxSize {
         return fmt.Errorf("request body too large")
     }
-    
+
     return json.Unmarshal(body, dest)
 }
 ```
@@ -737,38 +751,38 @@ name: Security Audit
 
 on:
   schedule:
-    - cron: '0 0 * * 0'  # Weekly
+    - cron: '0 0 * * 0' # Weekly
   workflow_dispatch:
 
 jobs:
   security-audit:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Install Rust
-      uses: dtolnay/rust-toolchain@stable
-    
-    - name: Install cargo-audit
-      run: cargo install cargo-audit
-    
-    - name: Security Audit
-      run: cargo audit --json | tee audit-results.json
-    
-    - name: Install cargo-deny
-      run: cargo install cargo-deny
-    
-    - name: License and Security Policy Check
-      run: cargo deny check
-    
-    - name: Upload security results
-      uses: github/codeql-action/upload-sarif@v2
-      if: always()
-      with:
-        sarif_file: audit-results.json
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cargo-audit
+        run: cargo install cargo-audit
+
+      - name: Security Audit
+        run: cargo audit --json | tee audit-results.json
+
+      - name: Install cargo-deny
+        run: cargo install cargo-deny
+
+      - name: License and Security Policy Check
+        run: cargo deny check
+
+      - name: Upload security results
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: audit-results.json
 ```
 
------
+---
 
 ## 10. Enhanced Anti-Patterns
 
@@ -857,7 +871,7 @@ pub struct PaymentService {
 // internal/features/user/service.go
 import "myapp/internal/features/payment"
 
-// internal/features/payment/service.go  
+// internal/features/payment/service.go
 import "myapp/internal/features/user"
 
 // ✅ Do: Use dependency inversion
@@ -912,15 +926,15 @@ func (s *UserService) CreateUser(ctx context.Context, data CreateUserData) (*Use
     if err := s.validateBusinessRules(data); err != nil {
         return nil, err
     }
-    
+
     // Low-level database details mixed in
     query := "INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3) RETURNING id"
     var id int64
     err := s.db.QueryRowContext(ctx, query, data.Name, data.Email, hashedPassword).Scan(&id)
-    
+
     // More business logic
     s.sendWelcomeEmail(user.Email)
-    
+
     return user, nil
 }
 
@@ -930,21 +944,21 @@ func (s *UserService) CreateUser(ctx context.Context, data CreateUserData) (*Use
     if err := s.validateBusinessRules(data); err != nil {
         return nil, err
     }
-    
+
     user, err := s.buildUser(data)
     if err != nil {
         return nil, err
     }
-    
+
     // Delegate to repository layer
     createdUser, err := s.repo.Create(ctx, user)
     if err != nil {
         return nil, err
     }
-    
+
     // Business logic continues
     s.emailService.SendWelcomeEmail(ctx, createdUser.Email)
-    
+
     return createdUser, nil
 }
 ```
@@ -961,10 +975,10 @@ fn test_user_service_calls_repository_create() {
     mock_repo.expect_create()
         .times(1)
         .returning(|_| Ok(()));
-    
+
     let service = UserService::new(Arc::new(mock_repo));
     service.create_user(test_data()).unwrap();
-    
+
     // This test breaks when you refactor internal implementation
 }
 
@@ -977,9 +991,9 @@ fn test_create_user_with_valid_data_succeeds() {
         email: "john@example.com".to_string(),
         password: "secure123!".to_string(),
     };
-    
+
     let result = service.create_user(user_data).await;
-    
+
     assert!(result.is_ok());
     let user = result.unwrap();
     assert_eq!(user.name, "John Doe");
@@ -990,22 +1004,31 @@ fn test_create_user_with_valid_data_succeeds() {
 }
 ```
 
------
+---
 
 ## Conclusion
 
-These enhanced AIBD-RG guidelines provide a comprehensive framework for maintainable AI-assisted development in Rust and Go. The key improvements include:
+These enhanced AIBD-RG guidelines provide a comprehensive framework for
+maintainable AI-assisted development in Rust and Go. The key improvements
+include:
 
-- **Enhanced AI Interaction**: Better prompting strategies, session management, and hallucination detection
-- **Language-Specific Deep Dives**: Async patterns, generics, context propagation, and type safety
-- **Comprehensive Tooling**: CI/CD integration, security scanning, and dependency management
-- **Security-First Approach**: Input validation, secure defaults, and static analysis integration
-- **Expanded Anti-Patterns**: AI-specific pitfalls, architectural violations, and testing mistakes
+- **Enhanced AI Interaction**: Better prompting strategies, session management,
+  and hallucination detection
+- **Language-Specific Deep Dives**: Async patterns, generics, context
+  propagation, and type safety
+- **Comprehensive Tooling**: CI/CD integration, security scanning, and
+  dependency management
+- **Security-First Approach**: Input validation, secure defaults, and static
+  analysis integration
+- **Expanded Anti-Patterns**: AI-specific pitfalls, architectural violations,
+  and testing mistakes
 
-Remember that successful AI-assisted development isn’t just about speed—it’s about maintaining quality, security, and long-term maintainability while leveraging AI to amplify your capabilities as a developer.
+Remember that successful AI-assisted development isn’t just about speed—it’s
+about maintaining quality, security, and long-term maintainability while
+leveraging AI to amplify your capabilities as a developer.
 
-The framework evolves with your team’s needs, so regularly review and update these guidelines based on your experience and changing requirements. }
-}
+The framework evolves with your team’s needs, so regularly review and update
+these guidelines based on your experience and changing requirements. } }
 
 ```
 pub async fn initialize(&mut self) -> AppResult<()> {
@@ -1016,17 +1039,11 @@ pub async fn initialize(&mut self) -> AppResult<()> {
 
 }
 
-// ✅ Use tokio::spawn safely with proper error handling
-pub async fn process_users_batch(&self, users: Vec<UserId>) -> AppResult<Vec<ProcessResult>> {
-let handles: Vec<_> = users
-.into_iter()
-.map(|user_id| {
-let service = Arc::clone(&self.service);
-tokio::spawn(async move {
-service.process_user(user_id).await
-})
-})
-.collect();
+// ✅ Use tokio::spawn safely with proper error handling pub async fn
+process*users_batch(&self, users: Vec<UserId>) -> AppResult<Vec<ProcessResult>>
+{ let handles: Vec<*> = users .into_iter() .map(|user_id| { let service =
+Arc::clone(&self.service); tokio::spawn(async move {
+service.process_user(user_id).await }) }) .collect();
 
 ```
 let mut results = Vec::new();
@@ -1041,7 +1058,7 @@ Ok(results)
 
 }
 
-```
+````
 #### Newtype Wrappers for Domain Safety
 ```rust
 // ✅ Use newtypes extensively for domain modeling
@@ -1062,7 +1079,7 @@ impl UserId {
     pub fn new() -> Self {
         Self(Uuid::new_v4())
     }
-    
+
     pub fn from_str(s: &str) -> Result<Self, ValidationError> {
         Uuid::parse_str(s)
             .map(Self)
@@ -1078,12 +1095,12 @@ impl Email {
             Err(ValidationError::InvalidEmail)
         }
     }
-    
+
     fn is_valid(email: &str) -> bool {
         // Email validation logic
         email.contains('@') && email.len() > 3
     }
-    
+
     pub fn domain(&self) -> &str {
         self.0.split('@').nth(1).unwrap_or("")
     }
@@ -1098,7 +1115,7 @@ pub fn send_welcome_email(user_id: String, email: String) -> Result<(), EmailErr
 pub fn send_welcome_email(user_id: UserId, email: Email) -> Result<(), EmailError> {
     // Impossible to mix up parameters
 }
-```
+````
 
 #### Result vs Option Usage Patterns
 
@@ -1143,7 +1160,7 @@ func (s *UserService) CreateUser(ctx context.Context, data CreateUserData) (*Use
     // Use context for timeouts, cancellation, and request-scoped values
     ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
     defer cancel()
-    
+
     return s.repo.Create(ctx, data)
 }
 
@@ -1197,21 +1214,21 @@ type PageResponse[T any] struct {
     NextOffset *int
 }
 
-func Paginate[T any](ctx context.Context, req PageRequest[T], 
+func Paginate[T any](ctx context.Context, req PageRequest[T],
     fetcher func(ctx context.Context, limit, offset int, filter T) ([]T, int, error),
 ) (*PageResponse[T], error) {
     items, total, err := fetcher(ctx, req.Limit, req.Offset, req.Filter)
     if err != nil {
         return nil, err
     }
-    
+
     hasMore := req.Offset+len(items) < total
     var nextOffset *int
     if hasMore {
         next := req.Offset + req.Limit
         nextOffset = &next
     }
-    
+
     return &PageResponse[T]{
         Items:      items,
         Total:      total,
@@ -1286,11 +1303,11 @@ func NewUserService(repo UserRepositoryV2, email EmailService, opts ...UserServi
         email:  email,
         logger: &NoOpLogger{}, // Default
     }
-    
+
     for _, opt := range opts {
         opt(s)
     }
-    
+
     return s
 }
 
@@ -1313,7 +1330,7 @@ type UserRepository interface {
 }
 ```
 
------
+---
 
 ## 5. Documentation Standards
 
@@ -1325,13 +1342,19 @@ Each feature must include a `prd.md` file using this template:
 # Feature Name: [Feature Name]
 
 ## Objective
+
 [1-2 sentences describing the business purpose and value of this feature]
 
 ## Business Context
-[Background information about why this feature is needed, what problem it solves, and how it fits into the broader application]
+
+[Background information about why this feature is needed, what problem it
+solves, and how it fits into the broader application]
 
 ## User Stories
-[List the primary user stories in the format: "As a [role], I want [goal] so that [reason]"]
+
+[List the primary user stories in the format: "As a [role], I want [goal] so
+that [reason]"]
+
 - As a [role], I want [goal] so that [reason]
 - As a [role], I want [goal] so that [reason]
 - As a [role], I want [goal] so that [reason]
@@ -1339,20 +1362,26 @@ Each feature must include a `prd.md` file using this template:
 ## Requirements
 
 ### Functional Requirements
+
 [What the system must do - specific behaviors and capabilities]
+
 - [Requirement 1]
 - [Requirement 2]
 - [Requirement 3]
 
 ### Non-Functional Requirements
+
 [How the system should perform - quality attributes]
+
 - Performance: [response times, throughput requirements]
 - Security: [authentication, authorization, data protection]
 - Reliability: [uptime, error handling, recovery]
 - Scalability: [concurrent users, data volume limits]
 
 ## Acceptance Criteria
+
 [Specific, testable conditions that define when the feature is complete]
+
 - [ ] [Testable criterion 1]
 - [ ] [Testable criterion 2]
 - [ ] [Testable criterion 3]
@@ -1360,24 +1389,27 @@ Each feature must include a `prd.md` file using this template:
 - [ ] [Edge case criterion]
 
 ## Out of Scope
+
 [Explicitly list what is NOT included to prevent scope creep]
+
 - [Excluded functionality 1]
 - [Excluded functionality 2]
 - [Future enhancement that's not part of this iteration]
 
 ## Dependencies
+
 [List dependencies on other features, external services, or infrastructure]
+
 - Internal: [other features this depends on]
 - External: [third-party services, APIs, databases]
 - Infrastructure: [deployment requirements, environment needs]
 
 ## API Design (if applicable)
+
 [High-level API structure if this feature exposes endpoints]
 ```
 
-POST /api/v1/[resource]
-GET /api/v1/[resource]/{id}
-PUT /api/v1/[resource]/{id}
+POST /api/v1/[resource] GET /api/v1/[resource]/{id} PUT /api/v1/[resource]/{id}
 DELETE /api/v1/[resource]/{id}
 
 ```
@@ -1385,11 +1417,7 @@ DELETE /api/v1/[resource]/{id}
 [Key data structures and relationships]
 ```
 
-[Entity] {
-field1: type
-field2: type
-relationships: []
-}
+[Entity] { field1: type field2: type relationships: [] }
 
 ```
 ## Security Considerations
@@ -1409,7 +1437,7 @@ relationships: []
 ## Rollout Plan
 [How the feature will be deployed and enabled]
 - [ ] Development environment
-- [ ] Staging environment  
+- [ ] Staging environment
 - [ ] Production deployment
 - [ ] Feature flags (if applicable)
 - [ ] Monitoring and alerts
@@ -1431,7 +1459,7 @@ Both Rust and Go have excellent built-in documentation tools:
 # Rust: Generate and serve documentation
 cargo doc --open --no-deps
 
-# Go: Generate and serve documentation  
+# Go: Generate and serve documentation
 go doc -http=:6060
 # Or for module documentation
 go doc ./...
@@ -1452,15 +1480,15 @@ All public APIs must include:
 
 #### Rust Documentation
 
-```rust
+````rust
 /// Service for managing user accounts and authentication.
-/// 
+///
 /// This service handles user registration, authentication, profile updates,
 /// and account management operations. It coordinates with the user repository
 /// and email service to provide complete user lifecycle management.
-/// 
+///
 /// # Examples
-/// 
+///
 /// ```rust
 /// let service = UserService::new(repo, email_service);
 /// let user = service.create_user(create_data).await?;
@@ -1472,20 +1500,20 @@ pub struct UserService {
 
 impl UserService {
     /// Creates a new user account with the provided data.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `data` - User creation data including name, email, and password
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// Returns the created user on success, or an error if:
     /// - Email is already registered
     /// - Password doesn't meet requirements
     /// - Email validation fails
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// * `UserError::EmailAlreadyExists` - Email is already registered
     /// * `UserError::InvalidPassword` - Password doesn't meet requirements
     /// * `UserError::ValidationFailed` - Input validation failed
@@ -1493,7 +1521,7 @@ impl UserService {
         // Implementation
     }
 }
-```
+````
 
 #### Go Documentation
 
@@ -1526,13 +1554,13 @@ func NewUserService(repo UserRepository, emailService EmailService, logger Logge
 //
 // Returns the created user on success, or an error if:
 //   - Email is already registered
-//   - Password doesn't meet requirements  
+//   - Password doesn't meet requirements
 //   - Email validation fails
 //
 // Example:
 //   user, err := service.CreateUser(ctx, CreateUserData{
 //       Name:     "John Doe",
-//       Email:    "john@example.com", 
+//       Email:    "john@example.com",
 //       Password: "secure123!",
 //   })
 func (s *UserService) CreateUser(ctx context.Context, data CreateUserData) (*User, error) {
@@ -1540,7 +1568,7 @@ func (s *UserService) CreateUser(ctx context.Context, data CreateUserData) (*Use
 }
 ```
 
------
+---
 
 ## 6. Testing Guidelines
 
@@ -1562,10 +1590,10 @@ async fn test_create_user_success() {
         email: "john@example.com".to_string(),
         password: "secure123!".to_string(),
     };
-    
+
     // Act
     let result = service.create_user(data).await;
-    
+
     // Assert
     assert!(result.is_ok());
     let user = result.unwrap();
@@ -1588,13 +1616,13 @@ func TestUserService_CreateUser_Success(t *testing.T) {
     service := createTestUserService(t)
     data := CreateUserData{
         Name:     "John Doe",
-        Email:    "john@example.com", 
+        Email:    "john@example.com",
         Password: "secure123!",
     }
-    
+
     // Act
     user, err := service.CreateUser(context.Background(), data)
-    
+
     // Assert
     require.NoError(t, err)
     assert.Equal(t, "John Doe", user.Name)
@@ -1621,7 +1649,7 @@ pub async fn create_test_user_service() -> TestUserService {
     let repo = Arc::new(MockUserRepository::new());
     let email_service = Arc::new(MockEmailService::new());
     let service = UserService::new(repo.clone(), email_service);
-    
+
     TestUserService { service, repo }
 }
 
@@ -1643,7 +1671,7 @@ func CreateTestUserService(t *testing.T) *UserService {
     repo := &MockUserRepository{}
     emailService := &MockEmailService{}
     logger := &MockLogger{}
-    
+
     return NewUserService(repo, emailService, logger)
 }
 
@@ -1657,7 +1685,7 @@ func CreateTestUser() *User {
 }
 ```
 
------
+---
 
 ## 7. AI Assistant Interaction Guidelines
 
@@ -1679,7 +1707,7 @@ Write a user service in Rust.
 Create a user service for our Rust application following AIBD-RG guidelines:
 
 Context: This is part of our user management feature that handles registration and authentication.
-Requirements: 
+Requirements:
 - Use our established error types (UserError)
 - Follow the Repository pattern
 - Include proper async/await patterns
@@ -1724,7 +1752,7 @@ Feature: [Feature Name]
 Business Context: [Why this feature exists]
 Key Capabilities:
 - [Capability 1]
-- [Capability 2] 
+- [Capability 2]
 - [Capability 3]
 
 Dependencies:
@@ -1753,27 +1781,32 @@ Maintain a development log for traceability:
 ## Session: 2024-12-12 - Payment Feature Implementation
 
 ### Context Shared:
+
 - AIBD-RG guidelines
 - Existing user management patterns
 - Database schema for payments
 
 ### Prompts Used:
+
 1. "Create payment feature structure and PRD"
 2. "Implement PaymentService following established patterns"
 3. "Add tests for payment validation logic"
 4. "Review code for AIBD-RG compliance"
 
 ### Generated Artifacts:
+
 - internal/features/payment/prd.md
 - internal/features/payment/service.go
 - internal/features/payment/types.go
 - internal/features/payment/service_test.go
 
 ### Issues Found:
+
 - Missing context propagation in service methods
 - Error types not following established patterns
 
 ### Fixes Applied:
+
 - Added context.Context as first parameter
 - Updated error types to match UserError pattern
 ```
@@ -1799,10 +1832,14 @@ Please acknowledge you understand the context before we proceed."
 
 Throughout development sessions:
 
-- **Start of session**: “Remember to follow our AIBD-RG guidelines throughout this session”
-- **Before major changes**: “Ensure this follows our [specific rule, e.g., ‘one declaration per file rule’]”
-- **After generation**: “Review this code for AIBD-RG compliance and suggest improvements”
-- **End of session**: “Summarize what we built and confirm it follows our architectural patterns”
+- **Start of session**: “Remember to follow our AIBD-RG guidelines throughout
+  this session”
+- **Before major changes**: “Ensure this follows our [specific rule, e.g., ‘one
+  declaration per file rule’]”
+- **After generation**: “Review this code for AIBD-RG compliance and suggest
+  improvements”
+- **End of session**: “Summarize what we built and confirm it follows our
+  architectural patterns”
 
 ### AI Hallucination Detection
 
@@ -1810,7 +1847,8 @@ Watch for these common AI mistakes:
 
 - **Inconsistent APIs**: AI inventing methods that don’t exist
 - **Wrong import paths**: AI assuming dependencies that aren’t there
-- **Pattern mixing**: AI switching between different architectural styles mid-session
+- **Pattern mixing**: AI switching between different architectural styles
+  mid-session
 - **Outdated syntax**: AI using deprecated language features
 
 **Validation prompts:**
@@ -1823,7 +1861,7 @@ Watch for these common AI mistakes:
 4. Have you introduced any new concepts not in our guidelines?"
 ```
 
------
+---
 
 ## 8. Enforcement Tools
 
@@ -1842,7 +1880,7 @@ serde = { version = "1.0", features = ["derive"] }
 thiserror = "1.0"
 uuid = { version = "1.0", features = ["v4", "serde"] }
 
-[dev-dependencies]  
+[dev-dependencies]
 tokio-test = "0.4"
 mockall = "0.11"
 
@@ -1952,21 +1990,27 @@ run:
     - vendor
 ```
 
------
+---
 
 ## 9. 7-Step AIBD-RG Workflow
 
-1. **Start with Boilerplate**: Use pre-configured project template with proper structure and tooling
-2. **Share Guidelines**: Begin each AI session with: “Follow our AIBD-RG guidelines”
-3. **Define Features Architecturally**: Request directory structure and PRD files before implementation
-4. **Generate Implementation**: Let AI create code following established patterns
+1. **Start with Boilerplate**: Use pre-configured project template with proper
+   structure and tooling
+2. **Share Guidelines**: Begin each AI session with: “Follow our AIBD-RG
+   guidelines”
+3. **Define Features Architecturally**: Request directory structure and PRD
+   files before implementation
+4. **Generate Implementation**: Let AI create code following established
+   patterns
 5. **Implement Tests**: Map test cases to acceptance criteria in PRD files
-6. **Validate with Tools**: Run linters, formatters, and tests; fix issues with AI assistance
+6. **Validate with Tools**: Run linters, formatters, and tests; fix issues with
+   AI assistance
 7. **Iterate**: Repeat for each feature, building on previous work
 
 ### Complete Workflow Example: Adding Payment Processing Feature
 
-Here’s a complete walkthrough of all 7 steps with actual commands and AI interactions:
+Here’s a complete walkthrough of all 7 steps with actual commands and AI
+interactions:
 
 #### Step 1: Start with Boilerplate
 
@@ -1985,11 +2029,11 @@ git status  # Ensure clean working directory
 **AI Chat Interaction:**
 
 ```
-🧑: "I'm starting a new development session for our Rust/Go project. 
+🧑: "I'm starting a new development session for our Rust/Go project.
 
 Please follow our AIBD-RG guidelines throughout this session:
 - Feature-based architecture with one declaration per file
-- Use established error handling patterns  
+- Use established error handling patterns
 - Include comprehensive documentation
 - Map tests to acceptance criteria
 - Maintain clear dependency boundaries
@@ -2036,7 +2080,7 @@ tree internal/features/payment/        # Go
 
 # Review the generated PRD file
 cat src/features/payment_processing/prd.md  # Rust
-# or  
+# or
 cat internal/features/payment/prd.md        # Go
 ```
 
@@ -2076,7 +2120,7 @@ go build ./... # Go
 ```
 🧑: "Now let's ensure we have comprehensive test coverage. Please implement tests for all acceptance criteria listed in our payment processing PRD:
 
-- Map each test directly to an acceptance criterion  
+- Map each test directly to an acceptance criterion
 - Use our established testing patterns and utilities
 - Include both success and failure scenarios
 - Test error handling thoroughly
@@ -2139,7 +2183,7 @@ git commit -m "feat(payment-processing): implement secure payment validation and
 
 - Add PaymentService with comprehensive validation logic
 - Implement support for credit cards and bank transfers
-- Add PaymentError types following established error patterns  
+- Add PaymentError types following established error patterns
 - Include PaymentRepository with proper async patterns
 - Add complete test coverage for all acceptance criteria
 - Integrate with external payment gateway abstraction"
@@ -2155,7 +2199,7 @@ git push origin feature/payment-processing
 cargo new myapp --lib && cd myapp
 
 # Step 2-5: AI interactions (chat-based, no commands)
-# - Share AIBD-RG guidelines  
+# - Share AIBD-RG guidelines
 # - Define feature architecture
 # - Generate implementation
 # - Create comprehensive tests
@@ -2168,9 +2212,11 @@ make check                                  # Go
 git add . && git commit -m "feat(feature-name): description"
 ```
 
-**Key Point:** Steps 2-5 happen primarily through AI chat interactions, while steps 1, 6, and 7 use command-line tools. The validation commands in step 6 create a feedback loop with the AI to ensure quality.
+**Key Point:** Steps 2-5 happen primarily through AI chat interactions, while
+steps 1, 6, and 7 use command-line tools. The validation commands in step 6
+create a feedback loop with the AI to ensure quality.
 
------
+---
 
 ## 10. Common Anti-Patterns to Avoid
 
@@ -2204,11 +2250,14 @@ git add . && git commit -m "feat(feature-name): description"
 - ❌ Missing examples in public API documentation
 - ❌ Test files that don’t map to acceptance criteria
 
------
+---
 
 ## Conclusion
 
-These AIBD-RG guidelines provide a framework for maintainable AI-assisted development in Rust and Go. By following these rules, you can leverage AI coding assistance while maintaining code quality, consistency, and long-term maintainability.
+These AIBD-RG guidelines provide a framework for maintainable AI-assisted
+development in Rust and Go. By following these rules, you can leverage AI coding
+assistance while maintaining code quality, consistency, and long-term
+maintainability.
 
 Remember to:
 
@@ -2218,4 +2267,5 @@ Remember to:
 - Keep features self-contained and boundaries clear
 - Prioritize type safety and proper error handling
 
-The key is not just generating code faster, but generating *better* code that remains comprehensible and maintainable as your project grows.
+The key is not just generating code faster, but generating _better_ code that
+remains comprehensible and maintainable as your project grows.
