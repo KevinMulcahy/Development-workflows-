@@ -1,0 +1,31 @@
+{
+
+  "MD013": {
+
+    "line_length": 120,
+
+    "ignore_code_blocks": true
+
+  },
+
+  "MD033": false,
+
+  "MD036": false,
+
+  "MD024": {
+
+    "allow_different_nesting": true
+
+  },
+
+  "MD040": true,
+
+  "MD010": true,
+
+  "MD047": true,
+
+  "MD001": true,
+
+  "MD041": true
+
+}
